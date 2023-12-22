@@ -18,9 +18,20 @@ jobs:
         with:
           node-version: '16.x'
 
-      - name: Install dependencies and build MkDocs
+      - name: Install MkDocs
         run: |
-          npm install -g mkdocs  # Install MkDocs globally
+          pip install mkdocs
+
+      - name: Install MkDocs Material Theme (if used)
+        run: |
+          pip install mkdocs-material  # Replace with your theme if different
+
+      - name: Install any other MkDocs plugins (if used)
+        run: |
+          # Add commands to install additional plugins if needed
+
+      - name: Build MkDocs
+        run: |
           mkdocs build -f docs/mkdocs.yml  # Specify the correct path to your mkdocs.yml file
 
       - name: Deploy to GitHub Pages
