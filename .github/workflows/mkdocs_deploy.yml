@@ -16,6 +16,7 @@ jobs:
       - name: Install dependencies and build
         run: |
           pip install mkdocs
+          cd docs
           mkdocs build
 
       - name: Deploy to GitHub Pages
