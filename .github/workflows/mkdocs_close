@@ -1,0 +1,45 @@
+name: MkDocs Cleanup on PR Close or Merge
+
+on:
+  pull_request:
+    branches:
+      - master  # Replace with your main branch name
+    types:
+      - closed
+
+jobs:
+  cleanup_close_merge_pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16.x'
+
+      - name: Remove Deployment URL when PR is closed or merged
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: pullRequest } = await github.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
+            const comments = await github.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pullRequest.number
+            });
+            const deploymentComment = comments.data.find(comment => comment.body.includes('MkDocs deployed to'));
+            if (deploymentComment) {
+              await github.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: deploymentComment.id
+              });
+            }
