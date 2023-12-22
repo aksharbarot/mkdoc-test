@@ -13,9 +13,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16.x'
+
       - name: Install dependencies and build MkDocs
         run: |
-          pip install mkdocs
+          npm install -g mkdocs  # Install MkDocs globally
           mkdocs build -f docs/mkdocs.yml  # Specify the correct path to your mkdocs.yml file
 
       - name: Deploy to GitHub Pages
