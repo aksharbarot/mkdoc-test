@@ -1,0 +1,31 @@
+name: MkDocs Deploy
+
+on:
+  pull_request:
+    branches:
+      - master  # Replace with your main branch name
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies and build
+        run: |
+          pip install mkdocs
+          mkdocs build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          publish_dir: ./site  # Change this if your build output directory is different
+          publish_branch: gh-pages  # The branch where the MkDocs site will be deployed
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+
+      - name: Remove deployment
+        run: git rm -rf site  # Remove the deployed site directory
+        if: github.event_name == 'pull_request' && github.event.action == 'closed'
