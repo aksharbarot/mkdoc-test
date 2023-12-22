@@ -1,12 +1,14 @@
-name: MkDocs Deploy
+name: MkDocs Deploy on PR Open
 
 on:
   pull_request:
     branches:
       - master  # Replace with your main branch name
+    types:
+      - opened
 
 jobs:
-  deploy:
+  deploy_open_pr:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,27 +23,34 @@ jobs:
       - name: Install MkDocs
         run: |
           pip install mkdocs
-
-      - name: Install MkDocs Material Theme (if used)
-        run: |
           pip install mkdocs-material  # Replace with your theme if different
-
-      - name: Install any other MkDocs plugins (if used)
-        run: |
-          # Add commands to install additional plugins if needed
 
       - name: Build MkDocs
         run: |
           mkdocs build -f docs/mkdocs.yml  # Specify the correct path to your mkdocs.yml file
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          publish_dir: ./docs/site  # Change this if your build output directory is different
-          publish_branch: gh-pages  # The branch where the MkDocs site will be deployed
-        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+      - name: Retrieve Deployment URL
+        id: deployment_url
+        run: |
+          DEPLOYMENT_URL=$(curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" \
+                         "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/builds/latest" | jq -r .status.deployments[0].url)
+          echo "::set-output name=deployment_url::$DEPLOYMENT_URL"
 
-      - name: Remove deployment
-        run: rm -rf docs/site  # Remove the deployed site directory
-        if: github.event_name == 'pull_request' && github.event.action == 'closed'
+      - name: Post Deployment URL as PR Comment
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: pullRequest } = await github.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number
+            });
+            const deploymentURL = `${process.env.DEPLOYMENT_URL}`;
+            const comment = `MkDocs deployed to [${deploymentURL}](${deploymentURL})`;
+            await github.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pullRequest.number,
+              body: comment
+            });
